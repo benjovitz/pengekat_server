@@ -1,0 +1,30 @@
+{
+  "name": "pengekat",
+  "version": "1.0.0",
+  "description": "backend for pengekat app and website",
+  "main": "app.js",
+  "type": "module",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/benjovitz/pengekat_backend.git"
+  },
+  "author": "Daniel Benjovitz",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/benjovitz/pengekat_backend/issues"
+  },
+  "homepage": "https://github.com/benjovitz/pengekat_backend#readme",
+  "dependencies": {
+    "mongodb": "^6.2.0",
+    "express": "^4.18.2",
+    "socket.io": "^4.7.2",
+    "express-session": "^1.17.3",
+    "helmet": "^7.0.0",
+    "bcrypt": "^5.1.1",
+    "cors": "^2.8.5",
+    "dotenv": "^16.3.1"
+  }
+}
