@@ -24,7 +24,7 @@ router.get("/groups/:groupId/front", checkSession, async (req, res) => {
     }
 })
 
-router.post("/groups/:groupId/front", async (req, res) => {
+router.post("/groups/:groupId/front", checkSession, async (req, res) => {
     const {amount, currency} = req.body
     const groupId = req.params.groupId
     try {
@@ -33,9 +33,12 @@ router.post("/groups/:groupId/front", async (req, res) => {
         const member = group.members.find(member => member._userId === req.session.userId)
         let newSum
         if(currency !== "DKK"){
-            const exchangedAmount = await exchange(amount, currency)
-            newSum = group.total_sum += 
-            member.front += Number(exchangedAmount)
+            const exchangedAmount = await exchange(amount, currency) 
+            if(!exchangedAmount){
+                res.sendStatus(500)
+            }
+            newSum = group.total_sum += exchangedAmount
+            member.front += exchangedAmount
         } else {
             newSum = group.total_sum += amount
             member.front += amount

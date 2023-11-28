@@ -10,5 +10,6 @@ const db = await client.db("pengekat")
 export default {
     users: db.collection("users"),
     groups: db.collection("groups"),
-    payments: db.collection("payment_logs")
+    payments: db.collection("payment_logs"),
+    currencies: db.collection("currencies_cache")
 }
