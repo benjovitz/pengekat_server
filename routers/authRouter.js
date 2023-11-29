@@ -18,6 +18,7 @@ router.post("/auth/signIn", bodyCheck, loginCheck, (req, res) => {
 })
 
 router.post("/auth/signUp", bodyCheck, usernameCheck, async (req, res) => {
+    //TODO: add email, maybe look at firebase auth
     try {
 
         const hashedPassword = await bcrypt.hash(req.body.password, Number(process.env.SALT_ROUNDS))

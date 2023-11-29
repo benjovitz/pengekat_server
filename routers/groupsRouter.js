@@ -7,16 +7,18 @@ import { ObjectId } from "mongodb"
 import { checkSession } from "../middleware/authMiddleware.js"
 import { exchange } from "../util/currencyUtil.js"
 
-router.get("/groups/:groupId/front", checkSession, async (req, res) => {
+router.use(checkSession)
+
+router.get("/groups/:groupId/front", async (req, res) => {
     try {
         const group = await db.groups.findOne({_id: new ObjectId(req.params.groupId)})
-        console.log(group.members)
-        const member = group.members.find(member => member._userId === req.session.userId)
+        const userId = new ObjectId(req.session.userId)
+        const member = group.members.find(member => member._userId.equals(userId))
 
-        const share = member.front - (group.total_sum/group.members.length)
         res.send({data: {
             front: member.front,
-            share: share
+            balance: member.balance,
+            paid: member.paid
         }})
 
     } catch (error) {
@@ -28,9 +30,11 @@ router.post("/groups/:groupId/front", checkSession, async (req, res) => {
     const {amount, currency} = req.body
     const groupId = req.params.groupId
     try {
-        const response = await db.payments.insertOne({_userId: new ObjectId(req.session.userId), _groupId: new ObjectId(groupId), currency, amount})
+        const timestamp = new Date().toLocaleDateString("da-DK", {weekday: "long", year: "numeric", month: "long", hour: "numeric", minute: "numeric"})
+        const response = await db.payments.insertOne({_userId: new ObjectId(req.session.userId), _groupId: new ObjectId(groupId), currency, amount, timestamp})
         const group = await db.groups.findOne({_id: new ObjectId(groupId)})
-        const member = group.members.find(member => member._userId === req.session.userId)
+        const userId = new ObjectId(req.session.userId)
+        const member = group.members.find(member => member._userId.equals(userId))
         let newSum
         if(currency !== "DKK"){
             const exchangedAmount = await exchange(amount, currency) 
@@ -39,11 +43,12 @@ router.post("/groups/:groupId/front", checkSession, async (req, res) => {
             }
             newSum = group.total_sum += exchangedAmount
             member.front += exchangedAmount
+            
         } else {
             newSum = group.total_sum += amount
             member.front += amount
         }
-        
+        group.members.map(member => calculateBalance(member, (newSum/group.members.length)))
         const newLog = [...group.log, response.insertedId]
         await db.groups.findOneAndUpdate({_id: new ObjectId(groupId)}, {$set: {total_sum: newSum, log: newLog, members: [...group.members]}})
     } catch (error) {
@@ -52,5 +57,26 @@ router.post("/groups/:groupId/front", checkSession, async (req, res) => {
     }
     res.sendStatus(200)
 })
+
+function calculateBalance(member, groupShare){
+    member.balance = member.front - groupShare + member.paid 
+    
+}
+//create group
+router.post("/groups", checkSession, (req, res, next) => {
+
+})
+
+//leave group (if you have no unpaid money)
+
+//modify group
+
+//pay
+
+//add member to group, make sure we that the new member doesnt have to pay for the everything before they were added
+
+//get group
+
+
 
 export default router
