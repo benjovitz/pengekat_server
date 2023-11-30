@@ -1,7 +1,7 @@
 import "dotenv/config"
 import db from "../database/connection.js"
 
-export async function exchange(amount, currency){
+export async function getExchangeRate(amount, currency){
         try {
                 const cachedCurrency = await db.currencies.findOne({currency_code: currency})
                 console.log(cachedCurrency)
