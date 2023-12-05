@@ -6,6 +6,7 @@ export async function getExchangeRate(amount, currency){
                 const cachedCurrency = await db.currencies.findOne({currency_code: currency})
                 console.log(cachedCurrency)
                 const now = Date.now()
+                
                 if(!cachedCurrency || now < cachedCurrency.timestamp + 86400000){
                         const response = await fetch(`https://api.freecurrencyapi.com/v1/latest?apikey=${process.env.CURRENCY_API_KEY}&currencies=${currency}&base_currency=DKK`)
                         const result = await response.json()
@@ -16,9 +17,7 @@ export async function getExchangeRate(amount, currency){
                         
                         const exchangedAmount = amount / exchangeRate
                         return Number(exchangedAmount.toFixed(2)) 
-                }
-                console.log("from database")
-                
+                }                
                 return Number((amount/cachedCurrency.exchangeRate).toFixed(2)) 
         } catch (error) {
                 return undefined

@@ -20,7 +20,7 @@ export function checkSession(req, res, next){
 
 export async function loginCheck(req, res, next){
     try {
-        const user = await db.users.findOne({username: req.body.username})
+        const user = await db.users.findOne({username: req.body.username.toLowerCase()})
         if(!user){
             res.status(404).send({data: `cant find user on username: ${req.body.username}`})
         } else{
@@ -40,7 +40,7 @@ export async function loginCheck(req, res, next){
 
 export async function usernameCheck(req, res, next) {
     try {
-        const user = await db.users.findOne({username: req.body.username})
+        const user = await db.users.findOne({username: req.body.username.toLowerCase()})
         if(user){
             res.send({data: "username already taken"})
         } else{

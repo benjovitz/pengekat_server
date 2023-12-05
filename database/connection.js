@@ -11,5 +11,6 @@ export default {
     users: db.collection("users"),
     groups: db.collection("groups"),
     payments: db.collection("payment_logs"),
-    currencies: db.collection("currencies_cache")
+    currencies: db.collection("currencies_cache"),
+    entries: db.collection("entry_logs")
 }

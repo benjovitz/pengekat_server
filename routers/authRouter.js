@@ -23,7 +23,7 @@ router.post("/auth/signUp", bodyCheck, usernameCheck, async (req, res) => {
 
         const hashedPassword = await bcrypt.hash(req.body.password, Number(process.env.SALT_ROUNDS))
         console.log(hashedPassword)
-        await db.users.insertOne({username: req.body.username, password: hashedPassword})
+        await db.users.insertOne({username: req.body.username.toLowerCase(), password: hashedPassword})
 
     } catch (error) {
         res.sendStatus(500)

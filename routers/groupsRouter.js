@@ -1,7 +1,6 @@
 import Router from "express"
 const router = Router()
 
-import db from "../database/connection.js"
 import { ObjectId } from "mongodb"
 
 import { checkSession } from "../middleware/authMiddleware.js"
@@ -9,36 +8,40 @@ import groupsService from "../service/groupsService.js"
 
 router.use(checkSession)
 
-router.get("/groups/:groupId/front", async (req, res) => {
+router.get("/api/groups/:groupId/balance", async (req, res) => {
     try {
-        const group = await groupsService.findGroup(req.params.groupId)
         const member = await groupsService.findMember(req.session.userId, group)
 
-        res.send({data: {
-            front: member.front,
-            balance: member.balance,
-            paid: member.paid
-        }})
+        const balance = await groupsService.findBalance(member, new ObjectId(req.params.groupId))
+
+        res.send({data: {balance}})
 
     } catch (error) {
         res.sendStatus(500)
     }
 })
-//make it possible to not share between every1 in group and leave some out of the payment
-router.post("/groups/:groupId/front", async (req, res) => {
-    const {amount, currency} = req.body
-    const groupId = req.params.groupId
+//make it possible to not share between every1 in group and leave some out of the payment!! i morgen 
+/* 
+[
+    {userId: "noget",
+amount: 200
+},
+{userId: "noget andet",
+amount: 200 
+}
+
+ ]
+*/
+router.post("/api/groups/:groupId/front", async (req, res) => {
+    const {amount, currency, ...share} = req.body
+    const groupId = new ObjectId(req.params.groupId)
 
     try {
-        const paymentLog = await groupsService.insertPayment(groupId, req.session.userId, currency, amount)
-        const group = await groupsService.findGroup(req.params.groupId)
-        const member = await groupsService.findMember(req.session.userId, group)
-        const newSum = await groupsService.calculateExchangeRate(member, currency, amount, group) 
-        const newLog = [...group.log, paymentLog.insertedId]
+        const entryLog = await groupsService.insertEntry(groupId, req.session.userId, currency, amount)
+        const group = await groupsService.findGroup(groupId)
+        const exchangedAmount = await groupsService.calculateExchangeRate(currency, amount) 
+        await groupsService.insertPayments(req.session.userId, group, entryLog.insertedId, exchangedAmount, amount, currency)
 
-        group.members.map(member => groupsService.calculateBalance(member, (newSum/group.members.length)))
-        
-        await db.groups.findOneAndUpdate({_id: new ObjectId(groupId)}, {$set: {total_sum: newSum, log: newLog, members: [...group.members]}})
     } catch (error) {
         console.log(error)
         res.sendStatus(500)
