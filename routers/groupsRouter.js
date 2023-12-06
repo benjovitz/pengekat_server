@@ -10,11 +10,11 @@ router.use(checkSession)
 
 router.get("/api/groups/:groupId/balance", async (req, res) => {
     try {
-        const member = await groupsService.findMember(req.session.userId, group)
-
-        const balance = await groupsService.findBalance(member, new ObjectId(req.params.groupId))
-
-        res.send({data: {balance}})
+        const group = await groupsService.findGroup(new ObjectId(req.params.groupId))
+        const member = groupsService.findMember(new ObjectId(req.session.userId), group)
+        res.send({data: {
+            balance: member.balance
+        }})
 
     } catch (error) {
         res.sendStatus(500)
@@ -33,20 +33,20 @@ amount: 200
  ]
 */
 router.post("/api/groups/:groupId/front", async (req, res) => {
-    const {amount, currency, ...share} = req.body
+    const {amount, currency, equalShare, customShare} = req.body
     const groupId = new ObjectId(req.params.groupId)
-
     try {
-        const entryLog = await groupsService.insertEntry(groupId, req.session.userId, currency, amount)
+        const expenseResponse = await groupsService.addExpense(groupId, req.session.userId, currency, amount, equalShare, customShare)
         const group = await groupsService.findGroup(groupId)
         const exchangedAmount = await groupsService.calculateExchangeRate(currency, amount) 
-        await groupsService.insertPayments(req.session.userId, group, entryLog.insertedId, exchangedAmount, amount, currency)
 
+        await groupsService.updateBalance(group, expenseResponse.insertedId, req.session.userId, exchangedAmount)
+        res.sendStatus(200)
     } catch (error) {
         console.log(error)
         res.sendStatus(500)
     }
-    res.send({data: "New front added to group and split evenly"})
+    
 })
 
 
@@ -59,7 +59,7 @@ router.post("/groups", (req, res) => {
 
 //modify group
 
-//pay
+//pay, all what member owes. paid: true and is owed
 
 //add member to group, make sure we that the new member doesnt have to pay for the everything before they were added
 
