@@ -38,9 +38,10 @@ router.post("/api/groups/:groupId/front", async (req, res) => {
     try {
         const expenseResponse = await groupsService.addExpense(groupId, req.session.userId, currency, amount, equalShare, customShare)
         const group = await groupsService.findGroup(groupId)
-        const exchangedAmount = await groupsService.calculateExchangeRate(currency, amount) 
+        const exchangeRate = await groupsService.calculateExchangeRate(currency) 
+        const exchangedAmount = amount / exchangeRate
 
-        await groupsService.updateBalance(group, expenseResponse.insertedId, req.session.userId, exchangedAmount)
+        await groupsService.updateBalance(group, expenseResponse.insertedId, req.session.userId, exchangedAmount, exchangeRate)
         res.sendStatus(200)
     } catch (error) {
         res.sendStatus(500)

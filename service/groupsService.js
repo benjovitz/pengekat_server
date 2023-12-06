@@ -12,13 +12,12 @@ async function addExpense( groupId, userId, currency, amount, equalShare, custom
     return response
 }
 
-async function calculateExchangeRate(currency, amount){
+async function calculateExchangeRate(currency){
     if(currency !== "DKK"){
-        const exchangedAmount = await getExchangeRate(amount, currency) 
-        console.log(exchangedAmount)
-        return exchangedAmount
+        const exchangeRate = await getExchangeRate(currency) 
+        return exchangeRate
     } 
-    return amount
+    return 1
 }
 
 async function findGroup(groupId){
@@ -31,7 +30,7 @@ function findMember(userId, group){
     return member
 }
 
-async function updateBalance(group, expenseId, payingMember, exchangedAmount){
+async function updateBalance(group, expenseId, payingMember, exchangedAmount, exchangeRate){
     const expense = await db.expenses.findOne({_id: new ObjectId(expenseId)})
 
     if(expense.equalShare === true){
@@ -43,6 +42,10 @@ async function updateBalance(group, expenseId, payingMember, exchangedAmount){
             }
          })
     } else {
+        if(expense.currency !== "DKK"){
+            expense.customShare.map(member => member.share = member.share / exchangeRate)
+        }
+        console.log(expense.customShare)
         group.members.map((member) => {
             const foundMember = expense.customShare.find(sharer => new ObjectId(sharer.userId).equals(member._userId))
             if(foundMember){
