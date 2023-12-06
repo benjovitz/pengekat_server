@@ -46,15 +46,11 @@ async function updateBalance(group, expenseId, payingMember, exchangedAmount){
         group.members.map((member) => {
             const foundMember = expense.customShare.find(sharer => new ObjectId(sharer.userId).equals(member._userId))
             if(foundMember){
-                console.log(foundMember)
                 foundMember.payer ? member.balance += exchangedAmount - foundMember.share : member.balance -= foundMember.share
             }
         })
     }
-    group.members.map(member => {
-        member.balance = Number(member.balance).toFixed(2)
-        member.balance = Number(member.balance)
-    })
+    group.members.map(member => member.balance = Number(member.balance.toFixed(2)))
     await db.groups.findOneAndUpdate({_id: new ObjectId(group._id)}, {$set:{members: [...group.members]}})
 
 }

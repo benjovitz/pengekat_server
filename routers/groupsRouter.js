@@ -43,7 +43,6 @@ router.post("/api/groups/:groupId/front", async (req, res) => {
         await groupsService.updateBalance(group, expenseResponse.insertedId, req.session.userId, exchangedAmount)
         res.sendStatus(200)
     } catch (error) {
-        console.log(error)
         res.sendStatus(500)
     }
     
