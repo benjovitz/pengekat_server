@@ -1,10 +1,11 @@
 import db from "../database/connection.js"
 import bcrypt from "bcrypt"
+import * as emailValidator from "email-validator"
 
 export function bodyCheck(req, res, next){
-    const {username, password, ...rest} = req.body
-    if(!username || !password){
-        res.status(404).send({data: "Need both username and password"})
+    const {username, password, email} = req.body
+    if(!username || !password || !email){
+        res.status(404).send({data: "Please fill out all fields"})
     } else {
         next()
     }
@@ -19,12 +20,14 @@ export function checkSession(req, res, next){
 }
 
 export async function loginCheck(req, res, next){
+    const {username, password, email} = req.body
     try {
-        const user = await db.users.findOne({username: req.body.username.toLowerCase()})
+        let user 
+        username ? user = await db.users.findOne({username: username.toLowerCase()}) : user = await db.users.findOne({email: email.toLowerCase()})
         if(!user){
-            res.status(404).send({data: `cant find user on username: ${req.body.username}`})
+            res.status(404).send({data: "Wrong credentials"})
         } else{
-            const isValid = await bcrypt.compare(req.body.password, user.password)
+            const isValid = await bcrypt.compare(password, user.password)
             if(!isValid){
                 res.send({data: "Wrong password"})
             } else{
@@ -49,4 +52,22 @@ export async function usernameCheck(req, res, next) {
     } catch (error) {
         res.sendStatus(500)
     }
+}
+
+export async function emailCheck(req, res, next){
+    if(!emailValidator.validate(req.body.email)){
+        res.status(404).send({data: "please include valid email"})
+    }
+    try {
+        const user = await db.users.findOne({email: req.body.email.toLowerCase()})
+        if(user){
+            res.send({data: "user with that email already exists"})
+        } else{
+        next()
+        }
+        
+    } catch (error) {
+        res.send(500)
+    }
+
 }

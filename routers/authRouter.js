@@ -2,7 +2,7 @@ import { Router } from "express";
 const router = Router()
 
 import "dotenv/config"
-import { bodyCheck, loginCheck, usernameCheck } from "../middleware/authMiddleware.js";
+import { bodyCheck, loginCheck, usernameCheck, emailCheck } from "../middleware/authMiddleware.js";
 import db from "../database/connection.js"
 import bcrypt from "bcrypt"
 
@@ -13,22 +13,19 @@ router.get("/auth/signOut", (req, res) => {
     res.send({data: "Signed out"})
 })
 
-router.post("/auth/signIn", bodyCheck, loginCheck, (req, res) => {
+router.post("/auth/signIn", loginCheck, (req, res) => {
     res.send({data: "Successful sign in"})
 })
 
-router.post("/auth/signUp", bodyCheck, usernameCheck, async (req, res) => {
-    //TODO: add email, maybe look at firebase auth
+router.post("/auth/signUp", bodyCheck, usernameCheck, emailCheck, async (req, res) => {
     try {
-
         const hashedPassword = await bcrypt.hash(req.body.password, Number(process.env.SALT_ROUNDS))
-        console.log(hashedPassword)
-        await db.users.insertOne({username: req.body.username.toLowerCase(), password: hashedPassword})
-
+        await db.users.insertOne({username: req.body.username.toLowerCase(), password: hashedPassword, email: req.body.email})
+        res.send({data: "Successful sign up"})
     } catch (error) {
         res.sendStatus(500)
     }
-    res.send({data: "Successful sign up"})
+    
 })
 
 export default router

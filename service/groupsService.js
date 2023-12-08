@@ -2,9 +2,9 @@ import db from "../database/connection.js"
 import { ObjectId } from "mongodb"
 import { getExchangeRate } from "../util/currencyUtil.js"
 
-async function addExpense( groupId, userId, currency, amount, equalShare, customShare){
+async function addExpense( groupId, userId, currency, comment, amount, equalShare, customShare){
     const timestamp = new Date().toLocaleDateString("da-DK", {day: "2-digit", year: "numeric", month: "2-digit", hour: "numeric", minute: "numeric"})
-    const mongoInsert = {_userId: new ObjectId(userId), _groupId: groupId, equalShare, currency, amount, timestamp}
+    const mongoInsert = {_userId: new ObjectId(userId), _groupId: groupId, equalShare, currency, amount, comment, timestamp}
     if(!equalShare){
         mongoInsert.customShare = customShare
     } 
@@ -28,6 +28,26 @@ async function findGroup(groupId){
 function findMember(userId, group){
     const member = group.members.find(member => member._userId.equals(userId))
     return member
+}
+
+async function removeMember(userIdToRemove, group){
+    const member = group.members.find(member => new ObjectId(member._userId).equals(userIdToRemove))
+    if(member.balance === 0){ 
+        const newGroup = group.members.filter(member => !new ObjectId(member._userId).equals(userIdToRemove))
+        await db.groups.findOneAndUpdate({_id: new ObjectId(group._id)}, {$set : {members: newGroup}})
+        return true
+    } 
+    return false
+}
+
+async function addMembers(members, group){
+    console.log(members)
+    const membersId = await db.users.find({username: {$in: members}}).toArray()
+    membersId.map((member) => {
+        group.members = [...group.members, {_userId: member._id, balance: 0}]
+    })
+    console.log(group.members)
+    await db.groups.findOneAndUpdate({_id: group._id}, {$set: {members: group.members}})
 }
 
 async function updateBalance(group, expenseId, payingMember, exchangedAmount, exchangeRate){
@@ -65,5 +85,7 @@ export default {
     findGroup,
     findMember,
     addExpense,
-    updateBalance
+    updateBalance,
+    removeMember,
+    addMembers
 }
