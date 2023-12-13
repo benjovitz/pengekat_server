@@ -2,6 +2,15 @@ import db from "../database/connection.js"
 import { ObjectId } from "mongodb"
 import { getExchangeRate } from "../util/currencyUtil.js"
 
+
+async function getAllGroups(userId){
+    const groups = await db.groups.find({members: {
+        $elemMatch:{
+            _userId: new ObjectId(userId)
+        }}}).toArray()
+    return groups
+}
+
 async function addExpense(groupId, userId, currency, comment, amount, shareOverview, exchangedAmount){
     const timestamp = new Date().toLocaleDateString("da-DK", {day: "2-digit", year: "numeric", month: "2-digit", hour: "numeric", minute: "numeric"})
     const mongoInsert = {_userId: new ObjectId(userId), _groupId: groupId, currency, share_overview: shareOverview, comment, timestamp}
@@ -78,6 +87,7 @@ async function updateBalance(group, expenseId, payingMember, exchangedAmount, ex
 }
 
 
+
 async function createGroup(groupName, userId){
     await db.groups.insertOne({group_name: groupName, members: [{_userId: userId, balance: 0}]})
 }
@@ -98,6 +108,26 @@ async function deleteExpense(expenseId, groupId, userId){
     })
     await db.groups.findOneAndUpdate({_id: group._id}, {$set: {members: group.members}})
     await db.expenses.findOneAndDelete({_id: expense._id})
+    return true
+}
+
+async function payDebt(group, payingMember){
+    if(payingMember.balance >= 0 ){
+        return
+    } else {
+        const payback = payingMember.balance
+        const membersOwed = group.members.filter(member => member.balance > 0)
+        const totalSurplus = membersOwed.reduce((total, member) =>{
+            return total + member.balance
+        }, 0)
+        membersOwed.map(member => {
+            const percentage = member.balance / totalSurplus * 100
+            const slice = percentage / 100 * payback
+            member.balance += slice
+        })
+    }
+    payingMember.balance = 0
+    await db.groups.findOneAndUpdate({_id: group._id}, {$set : {members: group.members}})
 }
 
 
@@ -111,5 +141,7 @@ export default {
     addMembers,
     createGroup,
     modifyGroup,
-    deleteExpense
+    deleteExpense,
+    payDebt,
+    getAllGroups
 }

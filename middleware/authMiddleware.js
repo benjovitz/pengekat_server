@@ -1,5 +1,6 @@
 import db from "../database/connection.js"
 import bcrypt from "bcrypt"
+import { ObjectId } from "mongodb";
 import * as emailValidator from "email-validator"
 
 export function bodyCheck(req, res, next){
@@ -29,7 +30,7 @@ export async function loginCheck(req, res, next){
         } else{
             const isValid = await bcrypt.compare(password, user.password)
             if(!isValid){
-                res.send({data: "Wrong password"})
+                res.status(404).send({data: "Wrong password"})
             } else{
                 req.session.userId = user._id
                 next()
@@ -45,7 +46,7 @@ export async function usernameCheck(req, res, next) {
     try {
         const user = await db.users.findOne({username: req.body.username.toLowerCase()})
         if(user){
-            res.send({data: "username already taken"})
+            res.status(404).send({data: "username already taken"})
         } else{
             next()
         }   
@@ -61,7 +62,7 @@ export async function emailCheck(req, res, next){
     try {
         const user = await db.users.findOne({email: req.body.email.toLowerCase()})
         if(user){
-            res.send({data: "user with that email already exists"})
+            res.status(404).send({data: "user with that email already exists"})
         } else{
         next()
         }
