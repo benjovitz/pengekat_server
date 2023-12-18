@@ -6,7 +6,7 @@ import * as emailValidator from "email-validator"
 export function bodyCheck(req, res, next){
     const {username, password, email} = req.body
     if(!username || !password || !email){
-        res.status(404).send({data: "Please fill out all fields"})
+        res.status(400).send({data: "Please fill out all fields"})
     } else {
         next()
     }
@@ -26,11 +26,11 @@ export async function loginCheck(req, res, next){
         let user 
         username ? user = await db.users.findOne({username: username.toLowerCase()}) : user = await db.users.findOne({email: email.toLowerCase()})
         if(!user){
-            res.status(404).send({data: "Wrong credentials"})
+            res.status(400).send({data: "Wrong credentials"})
         } else{
             const isValid = await bcrypt.compare(password, user.password)
             if(!isValid){
-                res.status(404).send({data: "Wrong password"})
+                res.status(400).send({data: "Wrong password"})
             } else{
                 req.session.userId = user._id
                 next()
@@ -46,7 +46,7 @@ export async function usernameCheck(req, res, next) {
     try {
         const user = await db.users.findOne({username: req.body.username.toLowerCase()})
         if(user){
-            res.status(404).send({data: "username already taken"})
+            res.status(400).send({data: "username already taken"})
         } else{
             next()
         }   
@@ -57,12 +57,12 @@ export async function usernameCheck(req, res, next) {
 
 export async function emailCheck(req, res, next){
     if(!emailValidator.validate(req.body.email)){
-        res.status(404).send({data: "please include valid email"})
+        res.status(401).send({data: "please include valid email"})
     }
     try {
         const user = await db.users.findOne({email: req.body.email.toLowerCase()})
         if(user){
-            res.status(404).send({data: "user with that email already exists"})
+            res.status(400).send({data: "user with that email already exists"})
         } else{
         next()
         }

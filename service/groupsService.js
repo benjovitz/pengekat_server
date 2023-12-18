@@ -2,13 +2,18 @@ import db from "../database/connection.js"
 import { ObjectId } from "mongodb"
 import { getExchangeRate } from "../util/currencyUtil.js"
 
-
 async function getAllGroups(userId){
     const groups = await db.groups.find({members: {
         $elemMatch:{
             _userId: new ObjectId(userId)
         }}}).toArray()
+        
     return groups
+}
+
+async function getExpenses(groupId){
+    const expenses = await db.expenses.find({_groupId: groupId}).toArray()
+    return expenses
 }
 
 async function addExpense(groupId, userId, currency, comment, amount, shareOverview, exchangedAmount){
@@ -105,10 +110,11 @@ async function deleteExpense(expenseId, groupId, userId){
             member.balance -= expense.amount - foundMember.share : 
             member.balance += foundMember.share
         }
+        return group
     })
     await db.groups.findOneAndUpdate({_id: group._id}, {$set: {members: group.members}})
     await db.expenses.findOneAndDelete({_id: expense._id})
-    return true
+    return group
 }
 
 async function payDebt(group, payingMember){
@@ -130,6 +136,17 @@ async function payDebt(group, payingMember){
     await db.groups.findOneAndUpdate({_id: group._id}, {$set : {members: group.members}})
 }
 
+async function addGroupNames(group){
+    const userIds = group.members.map(member => member._userId)
+    const users = await db.users.find({_id: {$in: userIds}}).toArray()
+    group.members.map((member) => {
+        const foundMember = users.find(user => user._id.equals(member._userId))
+        if(foundMember){
+            member.username = foundMember.username
+            delete member._userId
+        }
+    })
+}
 
 export default {
     calculateExchangeRate,
@@ -143,5 +160,7 @@ export default {
     modifyGroup,
     deleteExpense,
     payDebt,
-    getAllGroups
+    getAllGroups,
+    getExpenses,
+    addGroupNames
 }

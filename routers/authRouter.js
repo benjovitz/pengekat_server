@@ -14,7 +14,10 @@ router.get("/auth/signOut", (req, res) => {
 })
 
 router.post("/auth/signIn", loginCheck, (req, res) => {
-    res.send({data: "Successful sign in"})
+    res.send({data: {
+        message:"Successful sign in",
+        userId: req.session.userId
+    }})
 })
 
 router.post("/auth/signUp", bodyCheck, usernameCheck, emailCheck, async (req, res) => {

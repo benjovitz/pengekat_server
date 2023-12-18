@@ -13,7 +13,7 @@ app.use(cors({
 }))
 
 import session from "express-session"
-//app.set('trust proxy', 1)
+app.set('trust proxy', 1)
 
 const sessionMiddleware = session({
   secret: process.env.SESSION_SECRET,
@@ -31,7 +31,6 @@ const io = new Server(server, {
   cors: {
     origin: "*",
     methods: ["*"],
-    credentials: true
   }
 })
 
@@ -39,11 +38,12 @@ const wrap = middleware => (socket, next) => middleware(socket.request, {}, next
 io.use(wrap(sessionMiddleware))
 
 io.on("connection", (socket) => {
-    socket.on("client-sent-a-message", (data) => {
-      console.log(data)
-      io.emit("server-sent-a-message", {data})
+    socket.on("join-room", (data) => {
+    socket.join(data)
     })
-})
+  }) 
+
+app.set("io", io)
 
 import authRouter from "./routers/authRouter.js"
 app.use(authRouter)
@@ -56,6 +56,7 @@ app.use(usersRouter)
 
 
 const PORT = process.env.PORT || 8080
-app.listen(PORT, () => {
+server.listen(PORT, () => {
     console.log(`server started on ${PORT}`)
 })
+
