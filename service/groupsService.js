@@ -21,7 +21,7 @@ async function addExpense(groupId, userId, currency, comment, amount, shareOverv
     const mongoInsert = {_userId: new ObjectId(userId), _groupId: groupId, currency, share_overview: shareOverview, comment, timestamp}
     if(currency !== "DKK"){
         mongoInsert.amount = Number(exchangedAmount.toFixed(2))
-        mongoInsert.originalAmount = amount
+        mongoInsert.original_amount = amount
     } else {
         mongoInsert.amount = amount
     }
@@ -88,7 +88,8 @@ async function updateBalance(group, expenseId, payingMember, exchangedAmount, ex
         })
     group.members.map(member => member.balance = Number(member.balance.toFixed(2)))
     await db.groups.findOneAndUpdate({_id: new ObjectId(group._id)}, {$set:{members: [...group.members]}})
-    await db.expenses.findOneAndUpdate({_id: expense._id}, {$set: {share: expense.share}})
+    await db.expenses.findOneAndUpdate({_id: expense._id}, {$set: {share_overview: expense.share_overview}})
+    return group
 }
 
 
@@ -104,7 +105,7 @@ async function deleteExpense(expenseId, groupId, userId){
     }
     const group = await db.groups.findOne({_id: groupId})
     group.members.map((member) => {
-        const foundMember = expense.share.find(sharer => sharer._userId.equals(member._userId))
+        const foundMember = expense.share_overview.find(sharer => sharer._userId.equals(member._userId))
         if(foundMember){
             foundMember._userId.equals(userId) ? 
             member.balance -= expense.amount - foundMember.share : 
@@ -143,7 +144,6 @@ async function addGroupNames(group){
         const foundMember = users.find(user => user._id.equals(member._userId))
         if(foundMember){
             member.username = foundMember.username
-            delete member._userId
         }
     })
 }
