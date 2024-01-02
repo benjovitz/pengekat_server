@@ -19,8 +19,16 @@ function createChatLogs(messages, expenses){
     return chatLogs
 }
 
+async function addMessage(userId, groupId, comment){
+    const timestamp = new Date().toLocaleDateString("da-DK", {day: "2-digit", year: "numeric", month: "2-digit", hour: "numeric", minute: "numeric"})
+    const mongoInsert = {_userId: userId, _groupId: groupId, comment, timestamp}
+    await db.messages.insertOne(mongoInsert)
+    return mongoInsert
+}
+
 
 export default {
     getMessages,
-    createChatLogs
+    createChatLogs,
+    addMessage
 }

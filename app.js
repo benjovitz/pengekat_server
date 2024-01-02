@@ -41,6 +41,12 @@ io.on("connection", (socket) => {
     socket.on("join-room", (data) => {
     socket.join(data)
     })
+    socket.on("leave-room", (data) => {
+      socket.leave(data)
+    })
+    socket.on("message-from-client", (data) => {
+      io.in(data.groupId).emit("new-message", {data: {comment: data.comment, _userId: data._userId}})
+    })
   }) 
 
 app.set("io", io)

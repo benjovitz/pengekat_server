@@ -8,6 +8,8 @@ import { checkPartOfGroup } from "../middleware/groupMiddleware.js"
 import groupsService from "../service/groupsService.js"
 import chatService from "../service/chatService.js"
 
+import { upload } from "../util/imageUtil.js"
+
 
 router.get("/api/groups", checkSession, async (req, res) => {
     try {
@@ -48,7 +50,6 @@ router.get("/api/groups/:groupId/messages", checkSession, checkPartOfGroup, asyn
         const chatLogs = chatService.createChatLogs(messages, expenses)
         res.send({data: chatLogs})
     } catch (error) {
-        console.log(error)
         res.status(500).send({data: "something went wrong, please try again later"})
     }
 })
@@ -84,7 +85,7 @@ router.post("/api/groups", checkSession, async (req, res) => {
     }
 })
 
-router.post("/api/groups/:groupId/expense", checkSession, checkPartOfGroup,  async (req, res) => {
+router.post("/api/groups/:groupId/expenses", checkSession, checkPartOfGroup,  async (req, res) => {
     const {amount, currency, comment, shareOverview} = req.body
     try {
         const groupId = new ObjectId(req.params.groupId)
@@ -92,48 +93,62 @@ router.post("/api/groups/:groupId/expense", checkSession, checkPartOfGroup,  asy
         const exchangeRate = await groupsService.calculateExchangeRate(currency) 
         const exchangedAmount = amount / exchangeRate
         const shareWithId = shareOverview.map(member =>  member = {_userId: new ObjectId(member.userId), share: member.share})
-        const expenseResponse = await groupsService.addExpense(groupId, new ObjectId(req.session.userId), currency, comment, amount, shareWithId, exchangedAmount)
-        const updatedGroup = await groupsService.updateBalance(group, expenseResponse.insertedId, new ObjectId(req.session.userId), exchangedAmount, exchangeRate)
-        const messages = await chatService.getMessages(groupId)
-        const expenses = await groupsService.getExpenses(groupId)
-        const chatLogs = chatService.createChatLogs(messages, expenses)
+        const {insertedId, expense} = await groupsService.addExpense(groupId, new ObjectId(req.session.userId), currency, comment, amount, shareWithId, exchangedAmount)
+        const updatedGroup = await groupsService.updateBalance(group, insertedId, new ObjectId(req.session.userId), exchangedAmount, exchangeRate)
         await groupsService.addGroupNames(updatedGroup)
-        req.app.get("io").in(req.params.groupId).emit("update-balance", {data: updatedGroup})
-        req.app.get("io").in(req.params.groupId).emit("update-messages", {data: chatLogs})
+        req.app.get("io").in(req.params.groupId).emit("update-group", {data: updatedGroup})
+        req.app.get("io").in(req.params.groupId).emit("new-message", {data: expense})
         res.send({data: "expense added"})
     } catch (error) {
-        console.log(error)
         res.status(500).send({data: "something went wrong, please try again later"})
     }
 })
 
-router.post("/api/groups/:groupId/member", checkSession, checkPartOfGroup, async (req, res) => {
+router.post("/api/groups/:groupId/members", checkSession, checkPartOfGroup, async (req, res) => {
     const {members} = req.body
     if(!members){
         res.sendStatus(404).send({data: "need at least 1 member to add to the group"})
     }
     try {
         const group = await groupsService.findGroup(new ObjectId(req.params.groupId))
-        await groupsService.addMembers(members, group)
-        res.send({data: "member(s) added to group"}) 
+        const updatedGroup = await groupsService.addMembers(members, group)
+        await groupsService.addGroupNames(updatedGroup)
+        req.app.get("io").in(req.params.groupId).emit("update-group", {data: updatedGroup})
+        res.send({data: "member(s) added to group"})
     } catch (error) {
         console.log(error)
         res.status(500).send({data: "something went wrong, please try again later"})
     }
 })
 
-router.patch("/api/groups/:groupId", checkSession, checkPartOfGroup, async (req, res) => {
-    const {groupName} = req.body
+router.post("/api/groups/:groupId/messages", checkSession, checkPartOfGroup, async (req, res) => {
+    const {comment} = req.body
     try {
-        await groupsService.modifyGroup(new ObjectId(req.params.groupId), groupName)
+        const message = await chatService.addMessage(new ObjectId(req.session.userId), new ObjectId(req.params.groupId), comment)
+        req.app.get("io").in(req.params.groupId).emit("new-message", {data: message})
+        res.sendStatus(200)
+    } catch (error) {
+        console.log(error)
+        res.status(500).send({data: "something went wrong, please try again later"})
+    }
+})
+
+router.patch("/api/groups/:groupId", checkSession, checkPartOfGroup, upload.single("image"), async (req, res) => {
+    const {groupName} = req.body
+    try { 
+        if(req.file){
+            await groupsService.uploadGroupImage(req.params.groupId, req.body.photoString)
+        }
+        if(groupName){
+            await groupsService.modifyGroup(new ObjectId(req.params.groupId), groupName)
+        }
         res.send({data: "group modified"})
     } catch (error) {
-        console.log(error)
         res.status(500).send({data: "something went wrong, please try again later"})
     }
 })
 
-router.delete("/api/groups/:groupId/expense", checkSession, checkPartOfGroup, async (req, res) => {
+router.delete("/api/groups/:groupId/expenses", checkSession, checkPartOfGroup, async (req, res) => {
     const {expenseId} = req.body
     const groupId = new ObjectId(req.params.groupId)
     try {
@@ -143,9 +158,8 @@ router.delete("/api/groups/:groupId/expense", checkSession, checkPartOfGroup, as
             const messages = await chatService.getMessages(groupId)
             const expenses = await groupsService.getExpenses(groupId)
             const chatLogs = chatService.createChatLogs(messages, expenses)
-            req.app.get("io").in(req.params.groupId).emit("update-balance", {data: updatedGroup})
-            req.app.get("io").in(req.params.groupId).emit("update-messages", {data: chatLogs})
-            
+            req.app.get("io").in(req.params.groupId).emit("update-group", {data: updatedGroup})
+            req.app.get("io").in(req.params.groupId).emit("update-messages", {data: expenseId})    
         }
           
         updatedGroup ? res.send({data: "expense deleted"}) : res.status(401).send({data: "You can only delete your own expenses"})

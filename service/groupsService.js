@@ -1,6 +1,9 @@
 import db from "../database/connection.js"
 import { ObjectId } from "mongodb"
 import { getExchangeRate } from "../util/currencyUtil.js"
+import fs from "fs"
+import { app, database, storage } from "../util/firebase.js"
+import {ref, uploadBytes, getDownloadURL} from "firebase/storage"
 
 async function getAllGroups(userId){
     const groups = await db.groups.find({members: {
@@ -26,7 +29,8 @@ async function addExpense(groupId, userId, currency, comment, amount, shareOverv
         mongoInsert.amount = amount
     }
     const response = await db.expenses.insertOne(mongoInsert)
-    return response
+    //return response
+    return {insertedId: response.insertedId, expense: mongoInsert}
 }
 
 async function calculateExchangeRate(currency){
@@ -67,6 +71,7 @@ async function addMembers(members, group){
         group.members = [...group.members, {_userId: member._id, balance: 0}]
     })
     await db.groups.findOneAndUpdate({_id: group._id}, {$set: {members: group.members}})
+    return group
 }
 
 async function updateBalance(group, expenseId, payingMember, exchangedAmount, exchangeRate){
@@ -148,6 +153,16 @@ async function addGroupNames(group){
     })
 }
 
+async function uploadGroupImage(groupId, photoString){
+    const fileRef = ref(storage, groupId + "/" + photoString);
+    const fileData = fs.readFileSync("./database/uploads/" + photoString);
+
+    await uploadBytes(fileRef, fileData);
+
+    const downloadUrl = await getDownloadURL(fileRef);
+    await db.groups.findOneAndUpdate({_id: new ObjectId(groupId)}, {$set: {image: downloadUrl}})
+}
+
 export default {
     calculateExchangeRate,
     findGroup,
@@ -162,5 +177,6 @@ export default {
     payDebt,
     getAllGroups,
     getExpenses,
-    addGroupNames
+    addGroupNames,
+    uploadGroupImage
 }
