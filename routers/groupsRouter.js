@@ -29,13 +29,6 @@ router.get("/api/groups/:groupId/", checkSession, checkPartOfGroup,  async (req,
         const group = await groupsService.findGroup(new ObjectId(req.params.groupId))
         await groupsService.addGroupNames(group)
         res.send({data: group})
-        req.app.get("io").on("connection", (socket) => {
-            socket.on("get-groupId", (data) => {
-                console.log(data)
-            socket.join(req.params.groupId)
-            req.app.get("io").in(req.params.groupId).emit("message", {data: "SOCKET"})
-            })
-          })
     } catch (error) {
         console.log(error)
         res.status(500).send({data: "something went wrong, please try again later"})
@@ -68,8 +61,9 @@ router.get("/api/groups/:groupId/pay", checkSession, checkPartOfGroup, async (re
     try {
         const group = await groupsService.findGroup(new ObjectId(req.params.groupId))
         const member = groupsService.findMember(new ObjectId(req.session.userId), group)
-        await groupsService.payDebt(group, member)
-        res.send({data: "payment was successful"})
+        const response = await groupsService.payDebt(group, member)
+        req.app.get("io").in(req.params.groupId).emit("update-group", {data: response})
+        response ? res.send({data: "payment was successful"}) : res.send({data: "Nothing to pay"})
     } catch (error) {
         res.status(500).send({data: "something went wrong, please try again later"})
     }
@@ -125,7 +119,6 @@ router.post("/api/groups/:groupId/messages", checkSession, checkPartOfGroup, asy
     const {comment} = req.body
     try {
         const message = await chatService.addMessage(new ObjectId(req.session.userId), new ObjectId(req.params.groupId), comment)
-        req.app.get("io").in(req.params.groupId).emit("new-message", {data: message})
         res.sendStatus(200)
     } catch (error) {
         console.log(error)
@@ -155,9 +148,6 @@ router.delete("/api/groups/:groupId/expenses", checkSession, checkPartOfGroup, a
         const updatedGroup = await groupsService.deleteExpense(new ObjectId(expenseId), groupId, new ObjectId(req.session.userId))
         if(updatedGroup){
             await groupsService.addGroupNames(updatedGroup)
-            const messages = await chatService.getMessages(groupId)
-            const expenses = await groupsService.getExpenses(groupId)
-            const chatLogs = chatService.createChatLogs(messages, expenses)
             req.app.get("io").in(req.params.groupId).emit("update-group", {data: updatedGroup})
             req.app.get("io").in(req.params.groupId).emit("update-messages", {data: expenseId})    
         }

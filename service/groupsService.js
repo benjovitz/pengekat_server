@@ -29,7 +29,6 @@ async function addExpense(groupId, userId, currency, comment, amount, shareOverv
         mongoInsert.amount = amount
     }
     const response = await db.expenses.insertOne(mongoInsert)
-    //return response
     return {insertedId: response.insertedId, expense: mongoInsert}
 }
 
@@ -91,8 +90,9 @@ async function updateBalance(group, expenseId, payingMember, exchangedAmount, ex
                 foundMember.share = Number(foundMember.share.toFixed(2))
             }
         })
+        const newSum = group.total_sum += exchangedAmount
     group.members.map(member => member.balance = Number(member.balance.toFixed(2)))
-    await db.groups.findOneAndUpdate({_id: new ObjectId(group._id)}, {$set:{members: [...group.members]}})
+    await db.groups.findOneAndUpdate({_id: new ObjectId(group._id)}, {$set:{members: [...group.members], total_sum: newSum}})
     await db.expenses.findOneAndUpdate({_id: expense._id}, {$set: {share_overview: expense.share_overview}})
     return group
 }
@@ -100,7 +100,7 @@ async function updateBalance(group, expenseId, payingMember, exchangedAmount, ex
 
 
 async function createGroup(groupName, userId){
-    await db.groups.insertOne({group_name: groupName, members: [{_userId: userId, balance: 0}]})
+    await db.groups.insertOne({group_name: groupName, members: [{_userId: userId, balance: 0}], total_sum: 0})
 }
 
 async function deleteExpense(expenseId, groupId, userId){
@@ -125,7 +125,7 @@ async function deleteExpense(expenseId, groupId, userId){
 
 async function payDebt(group, payingMember){
     if(payingMember.balance >= 0 ){
-        return
+        return false
     } else {
         const payback = payingMember.balance
         const membersOwed = group.members.filter(member => member.balance > 0)
@@ -140,6 +140,7 @@ async function payDebt(group, payingMember){
     }
     payingMember.balance = 0
     await db.groups.findOneAndUpdate({_id: group._id}, {$set : {members: group.members}})
+    return group
 }
 
 async function addGroupNames(group){
