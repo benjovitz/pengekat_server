@@ -19,12 +19,16 @@ async function getExpenses(groupId){
     return expenses
 }
 
-async function addExpense(groupId, userId, currency, comment, amount, shareOverview, exchangedAmount){
+async function addExpense(groupId, userId, currency, comment, amount, shareOverview, exchangedAmount, exchangeRate){
     const timestamp = new Date().toLocaleDateString("da-DK", {day: "2-digit", year: "numeric", month: "2-digit", hour: "numeric", minute: "numeric"})
     const mongoInsert = {_userId: new ObjectId(userId), _groupId: groupId, currency, share_overview: shareOverview, comment, timestamp}
     if(currency !== "DKK"){
-        mongoInsert.amount = Number(exchangedAmount.toFixed(2))
+        mongoInsert.amount = exchangedAmount
         mongoInsert.original_amount = amount
+        /* mongoInsert.share_overview.map(member => {
+            member.originalShare = member.share
+            member.share = Number((member.share / exchangeRate).toFixed(2))
+            }) */
     } else {
         mongoInsert.amount = amount
     }
@@ -78,7 +82,7 @@ async function updateBalance(group, expenseId, payingMember, exchangedAmount, ex
         if(expense.currency !== "DKK"){
             expense.share_overview.map(member => {
                 member.originalShare = member.share
-                member.share = member.share / exchangeRate
+                member.share = Number((member.share / exchangeRate).toFixed(2))
                 })
         }
         group.members.map((member) => {
@@ -87,17 +91,17 @@ async function updateBalance(group, expenseId, payingMember, exchangedAmount, ex
                 foundMember._userId.equals(payingMember) ? 
                 member.balance += exchangedAmount - foundMember.share : 
                 member.balance -= foundMember.share
-                foundMember.share = Number(foundMember.share.toFixed(2))
             }
         })
         const newSum = group.total_sum += exchangedAmount
-    group.members.map(member => member.balance = Number(member.balance.toFixed(2)))
     await db.groups.findOneAndUpdate({_id: new ObjectId(group._id)}, {$set:{members: [...group.members], total_sum: newSum}})
     await db.expenses.findOneAndUpdate({_id: expense._id}, {$set: {share_overview: expense.share_overview}})
     return group
 }
 
-
+function calculateAmount(amount, exchangeRate){
+    return Number((amount / exchangeRate).toFixed(2))
+}
 
 async function createGroup(groupName, userId){
     await db.groups.insertOne({group_name: groupName, members: [{_userId: userId, balance: 0}], total_sum: 0})
@@ -179,5 +183,6 @@ export default {
     getAllGroups,
     getExpenses,
     addGroupNames,
-    uploadGroupImage
+    uploadGroupImage,
+    calculateAmount
 }
