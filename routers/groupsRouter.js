@@ -87,7 +87,7 @@ router.post("/api/groups/:groupId/expenses", checkSession, checkPartOfGroup,  as
         const exchangeRate = await groupsService.calculateExchangeRate(currency) 
         const exchangedAmount = groupsService.calculateAmount(amount, exchangeRate)
         const shareWithId = shareOverview.map(member =>  member = {_userId: new ObjectId(member.userId), share: member.share})
-        const {insertedId, expense} = await groupsService.addExpense(groupId, new ObjectId(req.session.userId), currency, comment, amount, shareWithId, exchangedAmount)
+        const {insertedId, expense} = await groupsService.addExpense(groupId, new ObjectId(req.session.userId), currency, comment, amount, shareWithId, exchangedAmount, exchangeRate)
         const updatedGroup = await groupsService.updateBalance(group, insertedId, new ObjectId(req.session.userId), exchangedAmount, exchangeRate)
         await groupsService.addGroupNames(updatedGroup)
         req.app.get("io").in(req.params.groupId).emit("update-group", {data: updatedGroup})

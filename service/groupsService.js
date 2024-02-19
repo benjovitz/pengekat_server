@@ -25,10 +25,11 @@ async function addExpense(groupId, userId, currency, comment, amount, shareOverv
     if(currency !== "DKK"){
         mongoInsert.amount = exchangedAmount
         mongoInsert.original_amount = amount
-        /* mongoInsert.share_overview.map(member => {
+        mongoInsert.share_overview.map(member => {
             member.originalShare = member.share
             member.share = Number((member.share / exchangeRate).toFixed(2))
-            }) */
+            //member.share = member.share / exchangeRate
+            }) 
     } else {
         mongoInsert.amount = amount
     }
@@ -77,30 +78,27 @@ async function addMembers(members, group){
     return group
 }
 
-async function updateBalance(group, expenseId, payingMember, exchangedAmount, exchangeRate){
+async function updateBalance(group, expenseId, payingMember){
     const expense = await db.expenses.findOne({_id: new ObjectId(expenseId)})
-        if(expense.currency !== "DKK"){
-            expense.share_overview.map(member => {
-                member.originalShare = member.share
-                member.share = Number((member.share / exchangeRate).toFixed(2))
-                })
-        }
         group.members.map((member) => {
             const foundMember = expense.share_overview.find(sharer => sharer._userId.equals(member._userId))
             if(foundMember){
                 foundMember._userId.equals(payingMember) ? 
-                member.balance += exchangedAmount - foundMember.share : 
+                member.balance += expense.amount - foundMember.share : 
                 member.balance -= foundMember.share
+                member.balance = Number((member.balance).toFixed(2))
             }
         })
-        const newSum = group.total_sum += exchangedAmount
+    const newSum = group.total_sum += expense.amount
     await db.groups.findOneAndUpdate({_id: new ObjectId(group._id)}, {$set:{members: [...group.members], total_sum: newSum}})
     await db.expenses.findOneAndUpdate({_id: expense._id}, {$set: {share_overview: expense.share_overview}})
     return group
 }
 
 function calculateAmount(amount, exchangeRate){
-    return Number((amount / exchangeRate).toFixed(2))
+    //return Number((amount / exchangeRate).toFixed(2))
+    return amount / exchangeRate
+    
 }
 
 async function createGroup(groupName, userId){
@@ -119,6 +117,7 @@ async function deleteExpense(expenseId, groupId, userId){
             foundMember._userId.equals(userId) ? 
             member.balance -= expense.amount - foundMember.share : 
             member.balance += foundMember.share
+            member.balance = Number((member.balance).toFixed(2))
         }
         return group
     })

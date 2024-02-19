@@ -12,9 +12,9 @@ export async function getExchangeRate(currency){
                         cachedCurrency ?
                         await db.currencies.findOneAndReplace({_id: cachedCurrency._id }, {...cachedCurrency, timestamp: Date.now(), exchange_rate: exchangeRate}):
                         await db.currencies.insertOne({currency_code: currency, exchange_rate:exchangeRate, timestamp: now})
-                        return Number(exchangeRate .toFixed(2))
+                        return exchangeRate
                 }       
-                return Number(cachedCurrency.exchange_rate.toFixed(2)) 
+                return cachedCurrency.exchange_rate
         } catch (error) {
                 return undefined
         }
