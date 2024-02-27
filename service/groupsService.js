@@ -142,6 +142,7 @@ async function payDebt(group, payingMember){
         })
     }
     payingMember.balance = 0
+    group.members.map(member => member.balance = Number(member.balance.toFixed(2)))
     await db.groups.findOneAndUpdate({_id: group._id}, {$set : {members: group.members}})
     return group
 }
