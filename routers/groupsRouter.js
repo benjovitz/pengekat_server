@@ -59,6 +59,11 @@ router.get("/api/groups/:groupId/leave", checkSession, checkPartOfGroup, async (
 
 //precheck endpoint med hvad der skal sendes til hvem
 
+router.get("/api/groups/:groupId/expenses", checkSession, checkPartOfGroup, async (req, res) => {
+    
+
+})
+
 router.get("/api/groups/:groupId/pay", checkSession, checkPartOfGroup, async (req, res) => {
     try {
         const group = await groupsService.findGroup(new ObjectId(req.params.groupId))
