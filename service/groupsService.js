@@ -28,7 +28,6 @@ async function addExpense(groupId, userId, currency, comment, amount, shareOverv
         mongoInsert.share_overview.map(member => {
             member.originalShare = member.share
             member.share = Number((member.share / exchangeRate).toFixed(2))
-            //member.share = member.share / exchangeRate
             }) 
     } else {
         mongoInsert.amount = amount
@@ -96,7 +95,6 @@ async function updateBalance(group, expenseId, payingMember){
 }
 
 function calculateAmount(amount, exchangeRate){
-    //return Number((amount / exchangeRate).toFixed(2))
     return amount / exchangeRate
     
 }
@@ -147,6 +145,24 @@ async function payDebt(group, payingMember){
     return group
 }
 
+async function debtCalculator(group, member){
+    if(member.balance >= 0){
+        return false
+    }
+    const payback = member.balance
+        const membersOwed = group.members.filter(member => member.balance > 0)
+        const totalSurplus = membersOwed.reduce((total, member) =>{
+            return total + member.balance
+        }, 0)
+        membersOwed.map(member => {
+            const percentage = member.balance / totalSurplus * 100
+            const slice = percentage / 100 * payback
+            member.slice = slice * -1
+        })
+        group.members = group.members.filter(member => member.slice)
+        return group
+}
+
 async function addGroupNames(group){
     const userIds = group.members.map(member => member._userId)
     const users = await db.users.find({_id: {$in: userIds}}).toArray()
@@ -184,5 +200,6 @@ export default {
     getExpenses,
     addGroupNames,
     uploadGroupImage,
-    calculateAmount
+    calculateAmount,
+    debtCalculator
 }

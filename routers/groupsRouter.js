@@ -57,10 +57,16 @@ router.get("/api/groups/:groupId/leave", checkSession, checkPartOfGroup, async (
     }
 })
 
-//precheck endpoint med hvad der skal sendes til hvem
-
 router.get("/api/groups/:groupId/expenses", checkSession, checkPartOfGroup, async (req, res) => {
-    
+    try {
+        const group =  await groupsService.findGroup(new ObjectId(req.params.groupId))
+        const member = groupsService.findMember(new ObjectId(req.session.userId), group)
+        const response = await groupsService.debtCalculator(group, member)
+        await groupsService.addGroupNames(response)
+        response ? res.send({data: response }) : res.send({data: "Nothing to pay"})
+    } catch (error) {
+        res.status(500).send({data: "something went wrong, please try again later"})
+    }
 
 })
 
@@ -71,7 +77,7 @@ router.get("/api/groups/:groupId/pay", checkSession, checkPartOfGroup, async (re
         const updatedGroup = await groupsService.payDebt(group, member)
         await groupsService.addGroupNames(updatedGroup)
         req.app.get("io").in(req.params.groupId).emit("update-group", {data: updatedGroup})
-        response ? res.send({data: "payment was successful"}) : res.send({data: "Nothing to pay"})
+        res.send({data: "payment was successful"})
     } catch (error) {
         res.status(500).send({data: "something went wrong, please try again later"})
     }
