@@ -45,7 +45,8 @@ io.on("connection", (socket) => {
       socket.leave(data)
     })
     socket.on("message-from-client", (data) => {
-      io.in(data.groupId).emit("new-message", {data: {comment: data.comment, _userId: data._userId}})
+      console.log(data)
+      io.in(data.groupId).emit("new-message", {data: {comment: data.comment, _userId: data._userId, username: data.username}})
     })
   }) 
 
@@ -57,8 +58,11 @@ app.use(authRouter)
 import groupsRouter from "./routers/groupsRouter.js"
 app.use(groupsRouter)
 
-import usersRouter from "./routers/usersRouter.js"
-app.use(usersRouter)
+import expensesRouter from "./routers/expensesRouter.js"
+app.use(expensesRouter)
+
+import messagesRouter from "./routers/messageRouter.js"
+app.use(messagesRouter)
 
 
 const PORT = process.env.PORT || 8080

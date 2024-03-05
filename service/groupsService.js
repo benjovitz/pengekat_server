@@ -159,11 +159,13 @@ async function debtCalculator(group, member){
             const slice = percentage / 100 * payback
             member.slice = slice * -1
         })
-        group.members = group.members.filter(member => member.slice)
+        group.members = group.members.filter(member => member.slice).map(member => member = {...member, slice: Number(member.slice.toFixed(2)) })
+        console.log(group.members)
         return group
 }
 
 async function addGroupNames(group){
+    if (group) {
     const userIds = group.members.map(member => member._userId)
     const users = await db.users.find({_id: {$in: userIds}}).toArray()
     group.members.map((member) => {
@@ -172,6 +174,7 @@ async function addGroupNames(group){
             member.username = foundMember.username
         }
     })
+}
 }
 
 async function uploadGroupImage(groupId, photoString){

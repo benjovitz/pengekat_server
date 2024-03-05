@@ -5,16 +5,24 @@ async function getMessages(groupId){
     return messages
 }
 
-function createChatLogs(messages, expenses){
+function createChatLogs(messages, expenses, group){
     const chatLogs = messages.concat(expenses)
     chatLogs.map(message => {
         const [day, month, yearHour, minute] = message.timestamp.split(".")
         const [year, hour] = yearHour.split(" ")
         message.timestampSort = new Date(`${year}-${month}-${day}T${hour}:${minute}:00`)
     })
-    
+
     chatLogs.sort((a,b) => {
         return a.timestampSort - b.timestampSort
+    })
+    chatLogs.map(message => {
+        const foundMember = group.members.find(member => message._userId.equals(member._userId))
+        if(foundMember){
+            message.username = foundMember.username
+        } else {
+            message.username = 'not in group anymore'
+        }
     })
     return chatLogs
 }

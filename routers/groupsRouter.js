@@ -6,8 +6,6 @@ import { ObjectId } from "mongodb"
 import { checkSession } from "../middleware/authMiddleware.js"
 import { checkPartOfGroup } from "../middleware/groupMiddleware.js"
 import groupsService from "../service/groupsService.js"
-import chatService from "../service/chatService.js"
-
 import { upload } from "../util/imageUtil.js"
 
 
@@ -35,7 +33,7 @@ router.get("/api/groups/:groupId/", checkSession, checkPartOfGroup,  async (req,
     }
 })
 
-router.get("/api/groups/:groupId/messages", checkSession, checkPartOfGroup, async(req, res) => {
+/* router.get("/api/groups/:groupId/messages", checkSession, checkPartOfGroup, async(req, res) => {
     try {
         const groupId = new ObjectId(req.params.groupId)
         const messages = await chatService.getMessages(groupId)
@@ -45,7 +43,7 @@ router.get("/api/groups/:groupId/messages", checkSession, checkPartOfGroup, asyn
     } catch (error) {
         res.status(500).send({data: "something went wrong, please try again later"})
     }
-})
+}) */
 
 router.get("/api/groups/:groupId/leave", checkSession, checkPartOfGroup, async (req, res) => {
     try {
@@ -57,7 +55,7 @@ router.get("/api/groups/:groupId/leave", checkSession, checkPartOfGroup, async (
     }
 })
 
-router.get("/api/groups/:groupId/expenses", checkSession, checkPartOfGroup, async (req, res) => {
+/* router.get("/api/groups/:groupId/expenses", checkSession, checkPartOfGroup, async (req, res) => {
     try {
         const group =  await groupsService.findGroup(new ObjectId(req.params.groupId))
         const member = groupsService.findMember(new ObjectId(req.session.userId), group)
@@ -68,9 +66,9 @@ router.get("/api/groups/:groupId/expenses", checkSession, checkPartOfGroup, asyn
         res.status(500).send({data: "something went wrong, please try again later"})
     }
 
-})
+}) */
 
-router.get("/api/groups/:groupId/pay", checkSession, checkPartOfGroup, async (req, res) => {
+/* router.get("/api/groups/:groupId/pay", checkSession, checkPartOfGroup, async (req, res) => {
     try {
         const group = await groupsService.findGroup(new ObjectId(req.params.groupId))
         const member = groupsService.findMember(new ObjectId(req.session.userId), group)
@@ -81,7 +79,7 @@ router.get("/api/groups/:groupId/pay", checkSession, checkPartOfGroup, async (re
     } catch (error) {
         res.status(500).send({data: "something went wrong, please try again later"})
     }
-})
+}) */
 
 router.post("/api/groups", checkSession, async (req, res) => {
     const {groupName} = req.body
@@ -93,7 +91,7 @@ router.post("/api/groups", checkSession, async (req, res) => {
     }
 })
 
-router.post("/api/groups/:groupId/expenses", checkSession, checkPartOfGroup,  async (req, res) => {
+/* router.post("/api/groups/:groupId/expenses", checkSession, checkPartOfGroup,  async (req, res) => {
     const {amount, currency, comment, shareOverview} = req.body
     try {
         const groupId = new ObjectId(req.params.groupId)
@@ -110,7 +108,7 @@ router.post("/api/groups/:groupId/expenses", checkSession, checkPartOfGroup,  as
     } catch (error) {
         res.status(500).send({data: "something went wrong, please try again later"})
     }
-})
+}) */
 
 router.post("/api/groups/:groupId/members", checkSession, checkPartOfGroup, async (req, res) => {
     const {members} = req.body
@@ -129,7 +127,7 @@ router.post("/api/groups/:groupId/members", checkSession, checkPartOfGroup, asyn
     }
 })
 
-router.post("/api/groups/:groupId/messages", checkSession, checkPartOfGroup, async (req, res) => {
+/* router.post("/api/groups/:groupId/messages", checkSession, checkPartOfGroup, async (req, res) => {
     const {comment} = req.body
     try {
         const message = await chatService.addMessage(new ObjectId(req.session.userId), new ObjectId(req.params.groupId), comment)
@@ -138,7 +136,7 @@ router.post("/api/groups/:groupId/messages", checkSession, checkPartOfGroup, asy
         console.log(error)
         res.status(500).send({data: "something went wrong, please try again later"})
     }
-})
+}) */
 
 router.patch("/api/groups/:groupId", checkSession, checkPartOfGroup, upload.single("image"), async (req, res) => {
     const {groupName} = req.body
@@ -155,7 +153,7 @@ router.patch("/api/groups/:groupId", checkSession, checkPartOfGroup, upload.sing
     }
 })
 
-router.delete("/api/groups/:groupId/expenses", checkSession, checkPartOfGroup, async (req, res) => {
+/* router.delete("/api/groups/:groupId/expenses", checkSession, checkPartOfGroup, async (req, res) => {
     const {expenseId} = req.body
     const groupId = new ObjectId(req.params.groupId)
     try {
@@ -171,7 +169,7 @@ router.delete("/api/groups/:groupId/expenses", checkSession, checkPartOfGroup, a
         console.log(error)
         res.status(500).send({data: "something went wrong, please try again later"})
     }
-})
+}) */
 
 
 export default router
