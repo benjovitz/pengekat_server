@@ -1,7 +1,7 @@
-import { initializeApp } from "firebase/app";
-import { getFirestore } from "firebase/firestore"
-import { getStorage } from "firebase/storage"
-import "dotenv/config"
+import { initializeApp } from 'firebase/app';
+import { getFirestore } from 'firebase/firestore';
+import { getStorage } from 'firebase/storage';
+import 'dotenv/config';
 
 const firebaseConfig = {
 
@@ -15,12 +15,12 @@ const firebaseConfig = {
 
   messagingSenderId: process.env.FIREBASE_SENDER_ID,
 
-  appId: process.env.FIREBASE_APP_ID
+  appId: process.env.FIREBASE_APP_ID,
 
 };
 
 const app = initializeApp(firebaseConfig);
-const database = getFirestore(app)
-const storage = getStorage(app)
+const database = getFirestore(app);
+const storage = getStorage(app);
 
-export { app, database, storage }
+export { app, database, storage };
